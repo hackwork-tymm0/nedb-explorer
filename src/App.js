@@ -6,13 +6,17 @@ import Typography from "@material-ui/core/Typography"
 import Box from "@material-ui/core/Box"
 import Base64 from "base-64"
 import ReactJSON from "react-json-view"
+import Button from "@material-ui/core/Button"
+import DocumentTItle from "react-document-title"
 
 export default class App extends Component {
     constructor () {
         super();
 
         this.state = {
+            activeDB: "",
             dbPicked: false,
+            file: null,
             db: null
         };
 
@@ -21,11 +25,12 @@ export default class App extends Component {
         this.renderItem = this.renderItem.bind(this);
     }
 
-    onPickFIle (event) {
-        let file = event.target.files[0];
+    onPickFIle (file) {
         let fileRead = new FileReader();
 
-        fileRead.onload = () => this.dbToStore(fileRead.result);
+        this.setState({ activeDB: file.name });
+
+        fileRead.onload = () => this.dbToStore(fileRead.result, file);
         fileRead.readAsDataURL(file);
     }
 
@@ -38,7 +43,7 @@ export default class App extends Component {
         );
     }
 
-    dbToStore (fileReadResult) {
+    dbToStore (fileReadResult, file) {
         let strokes = Base64.decode(fileReadResult.split(",")[1]).split("\n");
         let db = [];
 
@@ -59,16 +64,20 @@ export default class App extends Component {
             }
         }
 
-        this.setState({ db: db, dbPicked: true });
+        this.setState({ db: db, dbPicked: true, file: file});
     }
 
     render () {
+        console.log(this.state);
         return (
             <div>
+                <DocumentTItle 
+                    title={`${this.state.activeDB} - NeDB Explorer`}
+                />
                 <AppBar>
                     <ToolBar>
                         <Typography variant="h6">
-                            NeDB Explorer
+                            {this.state.activeDB} - NeDB Explorer
                         </Typography>
                     </ToolBar>
                 </AppBar>
@@ -77,9 +86,20 @@ export default class App extends Component {
                 <br />
                 <br />
                 <Box>
-                    <input type="file" name="file" onChange={this.onPickFIle}/>
+                    {!this.state.dbPicked ? <input type="file" name="file" onChange={(event) => this.onPickFIle(event.target.files[0])}/> : null}
+                    {this.state.dbPicked ? (
+                        <div>
+                            <Button onClick={() => this.onPickFIle(this.state.file)}> Refresh </Button>
+                            <Button color="secondary" onClick={() => this.setState({
+                                                                                    activeDB: "",
+                                                                                    dbPicked: false,
+                                                                                    file: null,
+                                                                                    db: null
+                            })}> close </Button>
+                        </div>
+                    ) : null}
                     <br />
-                    {this.state.dbPicked ? this.state.db.map(item => this.renderItem(item)) : <Typography variant="h4"> Please, select database file </Typography>}
+                    {this.state.dbPicked ? this.state.db.map(item => this.renderItem(item)) : <Typography> Please, select database file </Typography>}
                 </Box>
             </div>
         );
